@@ -1,14 +1,12 @@
 # A pure Go MSSQL driver for Go's database/sql package
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/Melarian/go-mssqldb.svg)](https://pkg.go.dev/github.com/Melarian/go-mssqldb)
-[![Build status](https://ci.appveyor.com/api/projects/status/jrln8cs62wj9i0a2?svg=true)](https://ci.appveyor.com/project/denisenkom/go-mssqldb)
-[![codecov](https://codecov.io/gh/denisenkom/go-mssqldb/branch/master/graph/badge.svg)](https://codecov.io/gh/denisenkom/go-mssqldb)
 
 For more recent updates, see the [Microsoft fork](https://github.com/microsoft/go-mssqldb).
 
 ## Install
 
-Requires Go 1.8 or above.
+Requires Go 1.21 or above.
 
 Install with `go get github.com/Melarian/go-mssqldb` .
 
