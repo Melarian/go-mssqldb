@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/Azure/go-autorest/autorest/adal"
-	mssql "github.com/denisenkom/go-mssqldb"
+	mssql "github.com/Melarian/go-mssqldb"
 )
 
 var (
