@@ -2,6 +2,8 @@ package azuread
 
 import (
 	"context"
+	"crypto"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,8 +12,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 
-	mssql "github.com/denisenkom/go-mssqldb"
-	"github.com/denisenkom/go-mssqldb/msdsn"
+	mssql "github.com/Melarian/go-mssqldb"
+	"github.com/Melarian/go-mssqldb/msdsn"
 )
 
 const (
@@ -159,7 +161,10 @@ func splitAuthorityAndTenant(authorityUrl string) (string, string) {
 func (p *azureFedAuthConfig) provideActiveDirectoryToken(ctx context.Context, serverSPN, stsURL string) (string, error) {
 	var cred azcore.TokenCredential
 	var err error
-	authority, tenant := splitAuthorityAndTenant(stsURL)
+	// authority, tenant := splitAuthorityAndTenant(stsURL)
+	// TODO See AuthorityHost todo below
+	_, tenant := splitAuthorityAndTenant(stsURL)
+
 	// client secret connection strings may override the server tenant
 	if p.tenantID != "" {
 		tenant = p.tenantID
@@ -173,7 +178,12 @@ func (p *azureFedAuthConfig) provideActiveDirectoryToken(ctx context.Context, se
 	case ActiveDirectoryServicePrincipal, ActiveDirectoryApplication:
 		switch {
 		case p.certificatePath != "":
-			cred, err = azidentity.NewClientCertificateCredential(tenant, p.clientID, p.certificatePath, &azidentity.ClientCertificateCredentialOptions{Password: p.clientSecret})
+			//cred, err = azidentity.NewClientCertificateCredential(tenant, p.clientID, p.certificatePath, &azidentity.ClientCertificateCredentialOptions{Password: p.clientSecret})
+			// TODO Fix this. Replaced above line for this case with the call below to get the package to compile
+			var certs []*x509.Certificate
+			var key crypto.PrivateKey
+			cred, err = azidentity.NewClientCertificateCredential(tenant, p.clientID, certs, key, &azidentity.ClientCertificateCredentialOptions{})
+
 		default:
 			cred, err = azidentity.NewClientSecretCredential(tenant, p.clientID, p.clientSecret, nil)
 		}
@@ -182,9 +192,13 @@ func (p *azureFedAuthConfig) provideActiveDirectoryToken(ctx context.Context, se
 	case ActiveDirectoryPassword:
 		cred, err = azidentity.NewUsernamePasswordCredential(tenant, p.applicationClientID, p.user, p.password, nil)
 	case ActiveDirectoryMSI, ActiveDirectoryManagedIdentity:
-		cred, err = azidentity.NewManagedIdentityCredential(p.clientID, nil)
+		clientID := azidentity.ClientID(p.clientID)
+		opts := azidentity.ManagedIdentityCredentialOptions{ID: clientID}
+		cred, err = azidentity.NewManagedIdentityCredential(&opts)
 	case ActiveDirectoryInteractive:
-		cred, err = azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{AuthorityHost: authority, ClientID: p.applicationClientID})
+		//cred, err = azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{AuthorityHost: authority, ClientID: p.applicationClientID})
+		// TODO What does AuthorityHost translate to?
+		cred, err = azidentity.NewInteractiveBrowserCredential(&azidentity.InteractiveBrowserCredentialOptions{ClientID: p.applicationClientID})
 
 	default:
 		// Integrated just uses Default until azidentity adds Windows-specific authentication
